@@ -1,0 +1,60 @@
+CODE:  
+#include <smorphi.h>          //Including smorphi libraries  
+#include <Pixy2ICSP_ESP32.h> //Including Pixy libraries 
+ 
+Smorphi my_robot;                       // Instantiating smorphi 
+Pixy2ICSP_ESP32 pixy;                  // Instantiating pixy 
+int color_signature,x,y,height,width; //Initialising required variables 
+ 
+void setup() {          // Setup function called when Arduino is powered 
+  Serial.begin(115200); 
+  my_robot.BeginSmorphi(); 
+  pixy.init(); 
+} 
+ 
+void loop() {                 // Main algorithm starts here 
+  int front_sensor_status = my_robot.module2_sensor_status(4); 
+  pixy.ccc.getBlocks(); 
+  if (pixy.ccc.numBlocks){ 
+  for (int i=0; i<pixy.ccc.numBlocks; i++){ 
+  pixy.ccc.blocks[i].print(); 
+  color_signature = pixy.ccc.blocks[i].m_signature; 
+  x=pixy.ccc.blocks[i].m_x; 
+  y=pixy.ccc.blocks[i].m_y; 
+  width=pixy.ccc.blocks[i].m_width; 
+  height=pixy.ccc.blocks[i].m_height; 
+  Serial.println(x); 
+  Serial.println(y); 
+  Serial.println(width); 
+  Serial.println(height); 
+  } 
+  } 
+  if ((front_sensor_status) == 0) {   //The object is detected by the IR sensor. 
+    my_robot.stopSmorphi();          // If condition is true then it stops  
+    my_robot.CenterPivotRight(150); // In order to kick the ball, it rotates to the right. 
+    delay(3000);                   // For 3 seconds 
+  } 
+  else if(color_signature==1 && x>=190)  // When the object's range is greater than 190, it 
+proceeds forward to bring the object within the range of the pixycam. 
+  { 
+    my_robot.MoveForward(10); // Statement to move forward (It moves to the right relative to 
+the pixycam's perspective.) 
+color_signature=0;       
+// The value of color_signature is reset to allow the loop to continue. 
+} 
+else if(color_signature==1 && x<=50) // If the object's range is less than 50, it moves backward 
+to bring the object within the range of the pixycam. 
+{ 
+my_robot.MoveBackward(10); // Statement to move back (It moves to the left relative to the 
+pixycam's perspective.) 
+color_signature=0;        
+// The value of color_signature is reset to allow the loop to continue. 
+} 
+else if(color_signature==1 && 140<x<145) // It continues to move in the direction indicated by 
+the pixycam vision when the range value lies within its range. 
+{ 
+my_robot.MoveLeft(10); // Statement to move left (It moves forward relative to the pixycam's 
+perspective.) 
+color_signature=0;    // The value of color_signature is reset to allow the loop to continue. 
+} 
+} 
